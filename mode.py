@@ -28,7 +28,7 @@ class Serial_Mode:
             self.ser.close()
             print(f"Serial port {self.port} closed.")
 
-    def send_duty(self, left_duty: int, right_duty: int):
+    def single_send_data(self, left_duty: int, right_duty: int):
         """
         向串口发送占空比数据包。
         :param left_duty: 左侧占空比（范围 -9999 到 9999）
@@ -50,7 +50,7 @@ class Serial_Mode:
         self.ser.write(send_data_buffer)
         print("Sent data: " + " ".join(f"0x{byte:02X}" for byte in send_data_buffer))
         
-    def receive_data(self):
+    def single_receive_data(self):
         while self.ser.in_waiting > 0:
             receive_data = self.ser.read(1)[0]
 
@@ -88,3 +88,17 @@ class Serial_Mode:
                 # 清空缓冲区，准备接收下一帧数据
                 self.receive_data_count = 0
                 self.receive_data_buffer = bytearray(5)
+
+    def main_send_data(self, duty):
+        send_data_buffer = bytearray(5)
+        send_data_buffer[0] = 0xA5  # 帧头
+        send_data_buffer[1] = 0x02  # 功能字
+
+        send_data_buffer[2] = (duty >> 8) & 0xFF  # 高八位
+        send_data_buffer[3] = duty & 0xFF         # 低八位
+
+        checksum = sum(send_data_buffer[:4]) & 0xFF
+        send_data_buffer[4] = checksum
+
+        self.ser.write(send_data_buffer)
+        print("Sent data: " + " ".join(f"0x{byte:02X}" for byte in send_data_buffer))
